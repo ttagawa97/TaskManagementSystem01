@@ -1,0 +1,139 @@
+document_role: 作業再開用の参考情報。正式仕様はspecs配下の5つのYAMLを正とする。
+plan_document: development_plan.md
+current_phase: P1
+current_activity: P1共通画面・開発環境を実装し自動検証済み。Google Chromeでの画面レビュー待ち。
+completed_phases:
+- 初回正式仕様YAML生成
+- 段階開発計画の作成と参照検証
+- P0：ユーザーが計画に沿った進行を指示し、対象範囲と順序を確認済み。
+gate:
+  status: P1画面レビュー待ち
+  environment_construction_authorized: true
+  authorized_environment_type: 開発環境
+  authorized_host: 現在このリポジトリを置いている作業マシン。ユーザーの「ここに作成します」で指定済み。
+  authorization_basis: ユーザーの「では、そのように進めてください」により提示済みのP1開発環境構築を含む計画の進行を承認。
+  implementation_started: true
+  next_gate: ユーザーがChromeでホームを確認後、修正を反映してP1を完了し、P2へ進む。
+  transition_policy: 各フェーズの検証結果を提示し、人間の動作レビューを反映してから次フェーズへ移る。
+phases:
+- id: P0
+  name: 着手範囲・仕様の確認
+  status: 完了
+- id: P1
+  name: 開発環境・共通基盤
+  status: 実装・自動検証済み／画面レビュー待ち
+- id: P2
+  name: 認証・ユーザー管理・監査基盤
+  status: 未着手
+- id: P3
+  name: プロジェクト・参加者・マスター
+  status: 未着手
+- id: P4
+  name: チケット・検索・親子関係・担当者制御
+  status: 未着手
+- id: P5
+  name: コメント・画像・Wiki
+  status: 未着手
+- id: P6
+  name: ガント・監査ログ閲覧
+  status: 未着手
+- id: P7
+  name: 統合検証・仕上げ
+  status: 未着手
+next_actions:
+- Google Chromeでhttp://127.0.0.1:8000の共通画面を確認してもらう。
+- 修正指示があればUI仕様とコードを更新し該当検証を行う。
+- P1承認後にP2の初期管理者作成・仮パスワード配布と期限・セッション期限・最後の管理者の扱いを順次確認する。
+pending_question:
+  subject: P1画面レビュー
+  question: Google Chromeでホームの配置・配色・日本時間表示に問題がないか。
+  affected_spec_ids:
+  - UI-001
+  - UI-011
+  - INF-009
+save_policy:
+- フェーズ開始・中断可能な区切り・完了時に本ファイルを保存する。
+- 計画変更時はdevelopment_plan.mdも更新する。
+- 回答・承認・検証結果・未実施理由・次の具体的作業を残す。
+observed_workspace_host:
+  os: Ubuntu 26.04.1 LTS
+  architecture: x86_64
+  docker_command: /usr/bin/docker
+  docker_engine: 29.7.2
+  docker_compose: v5.5.0
+  note: 構築先として確定。権限昇格した読み取りでDockerデーモン接続・ポート使用状況を確認。8000番は確認時点で未使用。他プロジェクトのイメージ・サービスは変更しない。
+dependency_research:
+  status: 公式互換情報とPyPIを確認し、実インストール・pip check・起動確認済み。イメージはダイジェスト固定。
+  proposed_series: Python 3.13、Django 5.2 LTS、PostgreSQL 17、psycopg 3
+  rationale: 承認済み技術の範囲でDjangoの長期サポート系列と対応Python・PostgreSQLを選定する。
+  official_sources:
+  - https://www.djangoproject.com/download/
+  - https://docs.djangoproject.com/en/5.2/faq/install/
+  - https://docs.djangoproject.com/en/5.2/ref/databases/
+  - https://www.postgresql.org/support/versioning/
+  installed_versions:
+    Python: 3.13.15
+    Django: 5.2.17
+    PostgreSQL: '17.11'
+    psycopg: 3.3.6
+unresolved_source: specs内のstatusが未決または保留の項目
+unresolved_schedule:
+  OV-018: P1・P2で開発に必要な認証運用を確認。本番分は保留可能。
+  OV-019: P6で削除済みログの参加者向け導線を確認。
+  OV-020: P2で最後の管理者、P3でマスター権限、P5で画像単独削除権限を確認。
+  INF-006: 基本依存固定済み。Chromeの実表示検証はレビュー待ち。後続ライブラリと一般配布最低ブラウザー版は後続。
+  INF-007: 開発接続はローカルHTTPに確定。独立テスト環境・ステージングのみ未決。
+  INF-008: 開発動作ログの容量ローテーションは確定。バックアップ・本番運用は未決。
+deferred_spec_ids:
+- OV-015
+- OV-016
+- OV-017
+- API-012
+- INF-004
+- INF-005
+verification_results:
+- check: P1自動テスト
+  result: 5件正常終了。ホーム・日本時間、404、変更メソッド拒否、DB正常時・障害時応答を検証。
+- check: 実際のHTTP応答
+  result: ホーム・CSS・DBヘルスチェックが200。公開先は127.0.0.1:8000のみ。
+- check: 再起動後の永続化
+  result: 開発コンテナ再起動・DBコンテナ再作成後も検証レコードと画像ボリュームの検証ファイルを保持。検証データは除去済み。
+- check: 依存関係
+  result: 固定版インストールとpip check正常。Python・PostgreSQLは実イメージをダイジェスト固定。
+- check: Google Chrome画面確認
+  result: 未実施。この実行環境にはChrome実行コマンドなし。ユーザーのChromeで表示・デザイン・実バージョン確認が必要。P1未完了。
+- check: 本番・負荷検証
+  result: 保留。構築・実施なし。
+runtime:
+  url: http://127.0.0.1:8000
+  compose_project: taskmanagementsystem01-dev
+  state: app/db起動中・healthy確認済み
+  start: bash execute/start-development.sh
+  stop: bash execute/stop-development.sh
+  tests: bash execute/test-development.sh
+  restart_verification: python3 execute/verify-development.py
+  secrets: .env.development（Git対象外・内容非表示・再生成不要）
+handoff:
+  portable_files:
+  - specs/（正式仕様）
+  - development_plan.md（段階計画）
+  - development_progress.yaml（現在のフェーズ・ゲート・検証結果・次の作業）
+  - app/
+  - compose.development.yaml
+  - execute/
+  - README.md
+  machine_local:
+  - .env.development（秘密値。別PCでコピーせず再生成）
+  - Dockerのtaskmanagementsystem01-dev_databaseボリューム
+  - Dockerのtaskmanagementsystem01-dev_imagesボリューム
+  resume_steps:
+  - リポジトリ一式を別PCへ取得する。
+  - development_progress.yamlのcurrent_phase・gate・next_actions・pending_questionを確認する。
+  - Docker EngineとComposeを確認する。
+  - python3 execute/prepare-development.pyを実行する。
+  - bash execute/start-development.shを実行する。
+  - 必要に応じてbash execute/test-development.shを実行する。
+  data_migration: 現在はP1共通画面のみで業務データなし。Dockerボリュームの移行が必要になった場合は、バックアップ方式を決めてから実施する。
+resolved_issues:
+- 初回Dockerビルドで/mediaが既存だったためmkdir -pに修正し再ビルド成功。
+- DB障害モックのSimpleTestCase後処理エラーをDB対応TestCaseに移し、5件すべて正常終了。

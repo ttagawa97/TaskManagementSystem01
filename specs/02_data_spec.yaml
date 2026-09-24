@@ -1,0 +1,165 @@
+specification: 02_data_spec
+schema_version: 1
+authority: requirements/spec.txtとYAML生成前のユーザー回答を反映。生成後は本YAML群が正式仕様。
+items:
+- id: DATA-001
+  title: ユーザー
+  status: 確定
+  requirements:
+  - 'users: id(bigint主キー), username(一意・必須), display_name, password_hash, is_active, is_system_admin, is_special, must_change_password,
+    created_at, updated_at。'
+  - unknownは1件のみのシステム共通予約ユーザーとして初期化する。通常ユーザーとして作成・改名・ログイン・担当手動選択しない。
+  - ユーザーは物理削除しない。作成者・投稿者・監査操作者の参照を保持する。ユーザーIDは空白のみ不可。
+  - 通常の担当者候補は有効な参加者のみ。既存の無効化ユーザー参照とunknown参照は完了済みチケットで保持可能。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-007
+  - OV-009
+  - OV-010
+- id: DATA-002
+  title: プロジェクト
+  status: 確定
+  requirements:
+  - 'projects: id(bigint主キー), name(必須), description, is_archived, created_by_id, created_at, updated_at, archived_at。'
+  - プロジェクトは物理削除しない。開始時に必須ステータス4件と初期種別4件を作成し、管理者を最低1名登録する。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-005
+  - OV-011
+  - DATA-004
+- id: DATA-003
+  title: 参加者とプロジェクト管理者
+  status: 確定
+  requirements:
+  - 'memberships: id, project_id, user_id, is_project_admin, created_at, updated_at。project_idとuser_idの組を一意にする。'
+  - 参加者削除はユーザー削除とは別操作。未完了担当チケットの不存在、完了済み担当者のunknown置換、管理者最低1名を同一操作で保証する。
+  - 管理者の解除・参加者削除・ユーザー無効化を通じ、有効なプロジェクト管理者が0名にならないようにする。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-005
+  - OV-009
+  - OV-010
+- id: DATA-004
+  title: プロジェクト別ステータス・種別
+  status: 確定
+  requirements:
+  - 'ticket_statuses: id, project_id, name, builtin_code(null可), is_active, sort_order, created_at, updated_at。'
+  - 必須ステータスは未対応(open)、処理中(in_progress)、処理済み(resolved)、完了(closed)。名称変更・削除・無効化は不可。完了判定はclosedのみ。
+  - 追加ステータスは名称変更・無効化・再有効化が可能。削除機能は設けない。追加ステータスはすべて未完了。
+  - 'ticket_types: id, project_id, name, is_active, sort_order, created_at, updated_at。初期値はタスク・バグ・要望・その他。初期種別も名称変更・無効化・再有効化が可能。'
+  - 種別も削除ではなく無効化を使用する。各マスターの名称は同一プロジェクトの同種マスター内で一意。
+  - 無効化された値を既存チケットは保持できる。他の項目だけを編集する場合も保持可能だが、新規設定・別の値からの変更では選択不可。
+  decision_reason: ユーザー承認したマスター仕様。AI補完として内部コードによる完了判定、名称の一意性、既存参照の維持を規定。
+  related_ids:
+  - OV-005
+  - OV-008
+  - API-009
+- id: DATA-005
+  title: チケット
+  status: 確定
+  requirements:
+  - 'tickets: id(bigint主キー), project_id, title(必須), description_markdown, status_id(必須), type_id(必須), priority(高・中・低), assignee_id(null可),
+    creator_id, parent_id(null可), start_date(null可), due_date(null可), created_at, updated_at。'
+  - 新規チケットの初期ステータスは未対応、優先度は中。種別はタスクが有効なら初期選択し、無効なら有効な種別を選択させる。
+  - タイトルは空白のみ不可。説明文は空を許可。開始日・期限は任意で、両方ある場合は開始日が期限以前。同日を許可する。
+  - status_id、type_id、parent_idは同一プロジェクト内を参照する。project_idの作成後の変更は禁止。
+  - parent_idの先にさらに親がある関係、子を持つチケットを子にする関係、自分自身の参照は禁止。
+  - チケット削除時は配下コメント・添付情報と画像本体も削除するが、監査ログを連鎖削除しない。子チケットがある場合は削除不可。
+  decision_reason: ユーザー確定要件に加え、AI補完として標準的な入力チェック・初期値・従属データの削除整合性を定義。
+  related_ids:
+  - OV-008
+  - OV-009
+  - OV-012
+  - DATA-004
+  - DATA-008
+  - DATA-009
+- id: DATA-006
+  title: コメント
+  status: 確定
+  requirements:
+  - 'comments: id, ticket_id, author_id, body_markdown, created_at, updated_at。'
+  - コメントはチケットに属し、編集・削除はOV-006に従う。本文も添付もない空のコメントは不可。
+  - コメント削除時はその添付を削除する。監査記録と投稿者情報のスナップショットは保持する。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-006
+  - OV-013
+  - DATA-008
+  - DATA-009
+- id: DATA-007
+  title: Wikiページ
+  status: 確定
+  requirements:
+  - 'wiki_pages: id, project_id, title(必須), body_markdown, creator_id, last_editor_id, created_at, updated_at。1プロジェクトに複数ページを作成可能。'
+  - 本文が空のページを許可する。過去版への復元機能は設けない。変更内容は監査ログに記録し、一般参加者向け履歴は操作者・時刻のみ。
+  - ページ削除時はその添付も削除するが、監査ログは保持する。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-006
+  - OV-012
+  - OV-013
+  - DATA-009
+- id: DATA-008
+  title: 添付画像
+  status: 確定
+  requirements:
+  - 'attachments: id, ticket_id(null可), comment_id(null可), wiki_page_id(null可), uploader_id, original_filename, storage_key,
+    media_type, size_bytes, created_at。所有先は3種類のうち必ず1件。'
+  - PNG・JPEG・GIF・WebPのみ。1枚10MB以下。上限の技術的解釈は10×1024×1024 bytesとする。
+  - チケット本体、コメント1件、Wikiページのそれぞれで10枚以下。同時アップロードでも上限を超えない。
+  - ファイル名・拡張子だけでなく画像内容を検証する。保存名はサーバー生成の衝突しないキーとし、元のファイル名で任意パスへ書き込ませない。
+  - 削除時は画像本体を完全削除し、監査ログには操作者・時刻・元ファイル名・サイズ・所有先などのメタデータだけを残す。
+  - DB更新とファイル削除の失敗を検知し、再試行可能な削除処理で孤立ファイルの残存を防ぐ。
+  decision_reason: ユーザー承認した形式・上限・削除方針。AI補完として容量単位、所有先制約、一般的なアップロード検証と削除整合性を具体化。
+  related_ids:
+  - OV-013
+  - OV-014
+  - INF-003
+  - API-008
+- id: DATA-009
+  title: 無期限監査ログ
+  status: 確定
+  requirements:
+  - 'audit_events: id(bigint主キー), occurred_at, actor_id(null可), actor_snapshot, project_id(null可), entity_type, entity_id,
+    entity_snapshot, action, changes(JSON:項目別のbefore/after), ticket_context_id(null可), metadata(JSON)。'
+  - 対象の作成・更新・削除、マスター変更、ユーザー無効化、パスワード初期化の事実、権限変更、参加者削除、アーカイブ・解除、一括担当解除、自動状態変更を記録する。
+  - 本文と変更前後の値を保持する。削除対象のID・名称・本文を記録するため、対象削除によりログを連鎖削除しない。操作者の識別情報も保持する。
+  - 自動変更は契機となる操作者と原因を記録する。親の処理中への変更とunknown等の未割り当て化も記録対象。
+  - チケット関連イベントにはticket_context_idを残し、当該チケットのログだけを取得可能にする。ユーザー・権限等の別リソースの秘密情報を混在させない。
+  - ログは追記専用とし、アプリ内の編集・削除機能を提供しない。保持期間は無期限。認証秘密と画像バイナリは記録しない。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-012
+  - OV-014
+  - API-010
+- id: DATA-010
+  title: 整合性・検索・日時
+  status: 確定
+  requirements:
+  - 時刻はタイムゾーン付きで保存し、開発環境の表示・日付判定をAsia/Tokyoにする。開始日・期限は時刻を持たない日付型。
+  - プロジェクト、担当者、ステータス、種別、更新日時、親ID、監査対象IDと発生日時に適切な索引を設ける。複合索引は実際のクエリに合わせる。
+  - 親子状態変更、担当者置換、参加者削除、ユーザー無効化、最低管理者数チェックはトランザクションと必要なロックで競合時も制約を守る。
+  - 親完了と子作成・紐付け・未完了化の同時実行でも、未完了の子を持つ親が完了のまま残らない。業務更新と対応する監査記録は同一トランザクションで確定する。
+  - 一覧・検索・ログはページ分割し、100万件を一括取得しない。キーワード検索の最適化はPostgreSQL内で検討し、外部検索サービスは追加しない。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-004
+  - OV-008
+  - OV-009
+  - OV-010
+  - INF-005
+  - API-011
+- id: DATA-011
+  title: 初期化・移行・互換性
+  status: 確定
+  requirements:
+  - P1は専用の新規開発DBを構築し、Django contenttypesの初期マイグレーションのみ適用する。業務データ・ユーザーテーブルはP2以降に段階導入し、カスタムユーザー導入前に標準authのマイグレーションを実行しない。
+  - 他プロジェクトのDBは変更しない。P1の新規初期化に既存業務データの移行はない。後続フェーズでは開発DB内の既存データへの影響を毎回確認する。
+  - 初回実装ではDjangoマイグレーションを用い、unknownを一意に作成する。各プロジェクト作成時に必須ステータス・初期種別を初期化する。
+  - 再実行でunknownや初期マスターが重複しないようにする。既存データがある場合は件数・参照関係・制約違反を確認し、移行方法と後方互換性をこの仕様へ追記してから移行する。
+  - 将来の破壊的変更は実施前に人間へ確認する。移行結果は件数、親子制約、担当者、ログ保持、マスター参照を検証する。
+  decision_reason: プロジェクトのデータ変更ルールと初回構築に必要な技術的補完。
+  related_ids:
+  - DATA-001
+  - DATA-004
+  - DATA-010

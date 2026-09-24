@@ -1,0 +1,45 @@
+name: taskmanagementsystem01-dev
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+services:
+  db:
+    image: postgres:17-bookworm@sha256:639ab7ceb90e13123085b741fb31ef493fba25463002f6da665352e7b534b652
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Run prepare-development.py first}
+      POSTGRES_USER: ${POSTGRES_USER:?Run prepare-development.py first}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run prepare-development.py first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging: *logging
+  app:
+    build: ./app
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Run prepare-development.py first}
+      POSTGRES_USER: ${POSTGRES_USER:?Run prepare-development.py first}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run prepare-development.py first}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Run prepare-development.py first}
+    ports:
+      - '127.0.0.1:8000:8000'
+    volumes:
+      - images:/media
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=5)"]
+      interval: 5s
+      timeout: 6s
+      retries: 12
+      start_period: 15s
+    logging: *logging
+volumes:
+  database:
+  images:

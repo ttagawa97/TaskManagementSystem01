@@ -1,0 +1,178 @@
+specification: 04_api_spec
+schema_version: 1
+authority: requirements/spec.txtとYAML生成前のユーザー回答を反映。生成後は本YAML群が正式仕様。
+items:
+- id: API-013
+  title: 開発環境ヘルスチェック
+  status: 確定
+  requirements:
+  - GET /health/はDBへSELECT 1を実行し、正常時200とstatus=ok、DB障害時503とstatus=unavailableを返す。
+  - 接続情報や例外内容を返さず、更新メソッドは拒否する。P1のループバック開発環境での起動確認に使用する。
+  decision_reason: AI補完。アプリとDBが利用可能であることを起動時に検証するため。
+  related_ids: [API-001, INF-009]
+- id: API-001
+  title: 内部バックエンド共通契約
+  status: 確定
+  requirements:
+  - 外部公開用APIは対象外。以下はアプリ画面専用の内部HTTP契約であり、公開APIとしての互換性保証はしない。
+  - Djangoテンプレートを返す画面ルートはGET、フォームによる更新はPOSTとする。GETで状態変更しない。画面とJSON内部APIは同じ業務サービスと認可を使う。
+  - 内部JSONの接頭辞は/api/internal/v1。セッション認証を使用し、変更要求にはCSRF検証を適用する。
+  - 成功は200、作成201、削除204。入力不備400、未認証401、権限不足403、対象なし404、業務制約・競合409。
+  - JSONエラー形式はerror.code、error.message、error.fields。スタックトレースや認証秘密を返さない。フォームでは同じエラーを日本語表示する。
+  - 一覧JSONはitemsとpagination(page,page_size,total)。更新時にサーバー側で参照先・権限・アーカイブ・業務制約を再検査する。
+  - 必要な内部通信のみ実装し、HTMLフォーム操作のためだけに同じJSON APIを重複実装することは必須としない。以下の操作契約は通信形式にかかわらず適用する。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-003
+  - OV-014
+- id: API-002
+  title: 認証操作
+  status: 確定
+  requirements:
+  - 'POST /auth/login: username,passwordを受け取り認証。POST /auth/logout: セッションを終了。'
+  - 'POST /auth/password/change: 現在の認証情報と新パスワード・確認入力を検証し更新する。初回・初期化後はmust_change_passwordを解除する。'
+  - 未変更の仮パスワードで認証したセッションはパスワード変更とログアウトのみ許可。業務APIへの直接要求も拒否する。
+  - 無効化ユーザー・unknownはログイン拒否し、既存セッションからの業務要求も拒否する。二要素認証と一時ロックは保留。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-007
+  - OV-017
+  - OV-018
+  - DATA-001
+- id: API-003
+  title: ユーザー操作
+  status: 確定
+  requirements:
+  - 'GET/POST /users、GET/PATCH /users/{id}: システム管理者による一覧・作成・参照・情報編集。'
+  - 'POST /users/{id}/reset-password: 仮パスワードへの初期化と再設定必須化。POST /users/{id}/deactivate: 無効化。'
+  - 無効化前に全プロジェクトの未完了担当件数と最低管理者数を検査する。違反は409。完了済みの担当者は変更しない。DELETEは提供しない。
+  - パスワード初期化と変更は値をログに書かない。仮パスワード配布・有効期限と最後のシステム管理者の扱いは未決。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-007
+  - OV-010
+  - OV-018
+  - OV-020
+  - DATA-001
+- id: API-004
+  title: プロジェクト・参加者操作
+  status: 確定
+  requirements:
+  - 'GET/POST /projects、GET/PATCH /projects/{id}: アクセス可能な一覧・詳細とシステム管理者による作成・基本情報更新。'
+  - 'GET/POST /projects/{id}/members、DELETE /projects/{id}/members/{user_id}: システム管理者または当該プロジェクト管理者が参加者を管理。'
+  - 'PATCH /projects/{id}/members/{user_id}/role: 管理者指定・解除はシステム管理者のみ。最低1名制約を検査。'
+  - 'POST /projects/{id}/members/{user_id}/unassign-open-tickets: 未完了だけを一括未割り当てにし変更件数を返す。完了済みは変更しない。'
+  - 参加者削除は未完了があれば409、なければ完了済みの担当をunknownへ置換して削除する。アーカイブ中に担当変更を要する場合は解除が先。
+  - 'POST /projects/{id}/archive、POST /projects/{id}/unarchive: システム管理者または当該プロジェクト管理者が実施。プロジェクトDELETEは提供しない。'
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-005
+  - OV-009
+  - OV-011
+  - DATA-003
+- id: API-005
+  title: チケット操作
+  status: 確定
+  requirements:
+  - 'GET/POST /projects/{id}/tickets、GET/PATCH/DELETE /tickets/{id}: 一覧・作成・取得・編集・削除。入力はDATA-005に従う。'
+  - 作成・編集は参加者とシステム管理者。削除は作成者・当該プロジェクト管理者・システム管理者でOV-006の参加条件に従う。
+  - 親子の設定・解除はparent_idの更新として扱う。子作成はparent_id付きの作成。2階層・同一プロジェクト・親完了の制約違反は409。
+  - 子の未完了化・追加・紐付けで必要なら親を処理中へ変更し、unknown・無効化ユーザーの担当を未割り当てにする。変更対象をレスポンスに含める。
+  - 子が残る親の削除は禁止。削除時は従属コメント・添付を削除し、履歴を保持する。アーカイブ時の変更は409。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-006
+  - OV-008
+  - OV-009
+  - DATA-005
+  - DATA-010
+- id: API-006
+  title: コメント操作
+  status: 確定
+  requirements:
+  - 'GET/POST /tickets/{id}/comments、PATCH/DELETE /comments/{id}: チケット参加者の一覧・投稿、本人または管理者の編集・削除。'
+  - Markdown本文と添付を受け付ける。親チケットの認可・アーカイブ制約を適用する。チケット変更ログにコメントの変更も含める。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-006
+  - DATA-006
+  - DATA-009
+- id: API-007
+  title: Wiki操作
+  status: 確定
+  requirements:
+  - 'GET/POST /projects/{id}/wiki、GET/PATCH/DELETE /wiki/{id}: 参加者とシステム管理者が閲覧・作成・編集・削除。'
+  - 'GET /wiki/{id}/history: 参加者向けに操作者と変更日時のみ返す。変更前後の本文は返さない。'
+  - アーカイブ中の変更は禁止。復元エンドポイントは設けない。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-006
+  - OV-012
+  - DATA-007
+- id: API-008
+  title: Markdownと添付操作
+  status: 確定
+  requirements:
+  - 'POST /markdown/preview: 認証済みでパスワード再設定済みのユーザー向けに、無害化したプレビューを返す。'
+  - 'POST /tickets/{id}/attachments、POST /comments/{id}/attachments、POST /wiki/{id}/attachments: multipart形式で画像を追加。親の編集権限を検証。'
+  - 'GET /attachments/{id}/content: 親リソースの閲覧権限を検証して画像を配信する。権限のない静的配信は禁止。'
+  - 'DELETE /attachments/{id}: 単独削除権限はOV-020確定後に実装する。対象本体の削除に伴う従属削除は本体削除権限で実施。'
+  - 形式・容量・枚数・所有先はDATA-008に従って検証し、削除のファイル処理失敗を黙って成功扱いしない。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-013
+  - OV-014
+  - OV-020
+  - DATA-008
+- id: API-009
+  title: マスター操作
+  status: 確定
+  requirements:
+  - GET/POST /projects/{id}/statuses、PATCH /projects/{id}/statuses/{status_id}。種別はstatusesをtypesに置換したルート。
+  - 一覧参照は参加者およびシステム管理者、変更は当該プロジェクト管理者。システム管理者の非兼任時の変更権限は未決。
+  - PATCHで名称変更・is_active切替を扱う。必須ステータスの名称変更・無効化は409。DELETEは提供しない。
+  - 無効化済みマスターの既存参照は保持する。新たな選択は拒否する。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-005
+  - OV-020
+  - DATA-004
+- id: API-010
+  title: 監査ログ参照
+  status: 確定
+  requirements:
+  - 'GET /audit-events: システム管理者は全体、プロジェクト管理者は自分のプロジェクトだけを取得可能。サーバー側で参照範囲を制限。'
+  - 'GET /tickets/{id}/history: 当該チケットの閲覧権限を持つユーザーが関連ログをそのまま取得する。'
+  - ログへのPOST/PATCH/DELETEは提供しない。削除済みチケットの一般参加者向け履歴は未決。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-012
+  - OV-019
+  - DATA-009
+  - UI-009
+- id: API-011
+  title: 検索とガント取得
+  status: 確定
+  requirements:
+  - 'GET /tickets: project_id,status_id,type_id,assignee_id,priority,q,page,page_sizeを受け付ける。GET /tickets/mineはログインユーザーの担当に固定する。'
+  - プロジェクト参加範囲の認可を先に適用し、UI-003のAND/OR・部分一致・並び順・ページサイズに従う。
+  - 'GET /projects/{id}/gantt: from,to,page,page_sizeを受け付け、開始日・期限の両方があり指定期間と重なるチケットを返す。'
+  - 日付形式やfrom<=toを検証する。親子表示に必要な親ID・名称は同一プロジェクトの認可内で返す。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - UI-003
+  - UI-006
+  - DATA-010
+- id: API-012
+  title: 外部接続
+  status: 保留
+  requirements:
+  - 外部公開APIは実装しない。Git連携・通知に関する外部接続は将来機能として保留。接続先・資格情報・課金・外部アカウントを仮定しない。
+  decision_reason: ユーザーが会話で確認・承認した要件。
+  related_ids:
+  - OV-015
+  - OV-016
+  affected_ids:
+  - OV-015
+  - OV-016
+  implementation_boundary: 当該未確定部分は実装しない。影響しない確定範囲の設計・実装は可能。

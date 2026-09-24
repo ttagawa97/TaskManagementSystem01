@@ -1,0 +1,147 @@
+specification: 05_infra_spec
+schema_version: 1
+authority: requirements/spec.txtとYAML生成前のユーザー回答を反映。生成後は本YAML群が正式仕様。
+items:
+- id: INF-001
+  title: 環境と構築ゲート
+  status: 確定
+  requirements:
+  - 開発環境は社内ネットワークで利用する。開発上の試行錯誤は開発環境のみで行う。
+  - 本番環境はインターネット公開の想定のみ確定し、構成と構築は保留。独立したテスト環境・ステージング環境の必要性は未決。
+  - 実際の構築開始時に対象環境の種類を人間へ確認する。指定されていない環境を構築・変更・起動確認しない。
+  - 開発環境の構築先は、このリポジトリを置いている現在の作業マシンとする。ユーザーが明示指定済み。
+  - 環境構築時にexecute配下へ承認対象環境の起動シェルを生成する。
+  decision_reason: ユーザーが会話で確認・承認した要件。
+  related_ids:
+  - OV-004
+  - INF-004
+  - INF-007
+- id: INF-002
+  title: コンテナ構成
+  status: 確定
+  requirements:
+  - Docker ComposeでDjangoアプリとPostgreSQLを別サービスとして定義する。Djangoテンプレート・静的資産はアプリに同梱する。
+  - フロントエンドとバックエンドを独立アプリとして分ける変更を行う場合は、それぞれ別フォルダ・別コンテナにし、技術構成変更を事前確認する。
+  - 各コンテナは起動時にサービスを自動起動する。アプリはDB利用可能状態を確認して起動する。
+  - 通常の再起動でデータを初期化しない。マイグレーションと初期データ作成は再実行可能にし、サービス起動と手順を明確にする。
+  decision_reason: 採用技術とプロジェクトルールに従う。AI補完として一体型Djangoの標準構成と起動整合性を定義。
+  related_ids:
+  - OV-003
+  - DATA-011
+  - INF-003
+- id: INF-003
+  title: 永続化とネットワークの基本
+  status: 確定
+  requirements:
+  - PostgreSQLデータ、アップロード画像、運用上必要なファイルをコンテナの一時領域から分離して永続化する。画像はアプリサーバー上のボリュームで保持する。
+  - 開発環境の時刻表示・日付判定はAsia/Tokyo。DB接続情報・Django秘密鍵は設定として注入し、リポジトリやログへ実値を記録しない。
+  - DBはアプリから接続し、画像は認可付きアプリ経由で配信する。外部ストレージ・外部検索サービスは追加しない。
+  - 開発は同一マシンのGoogle Chromeからhttp://127.0.0.1:8000で確認する。ホスト公開は127.0.0.1限定。DBポートはホストに公開しない。
+  decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
+  related_ids:
+  - OV-013
+  - OV-014
+  - DATA-008
+  - DATA-010
+  - INF-007
+- id: INF-004
+  title: 本番構成
+  status: 保留
+  requirements:
+  - インターネット公開の想定。サーバー構成、TLS・公開経路、ドメイン、運用体制、監視、可用性、SLA、バックアップ・復旧方式は保留。
+  - 本番を開発構成のまま自動公開しない。決定後に影響する仕様だけを更新する。
+  decision_reason: ユーザーが会話で確認・承認した要件。
+  related_ids:
+  - OV-004
+  - OV-017
+  - OV-018
+  - INF-008
+  affected_ids:
+  - INF-002
+  - INF-003
+  - INF-005
+  - INF-008
+  implementation_boundary: 当該未確定部分は実装しない。影響しない確定範囲の設計・実装は可能。
+- id: INF-005
+  title: 性能目標と負荷検証
+  status: 保留
+  requirements:
+  - 想定は登録1000人、同時500人、チケット100万件。応答時間の数値目標は未決、負荷検証は人間の指示により保留。
+  - 索引・ページ分割・必要範囲の検索取得は先行して設計する。サーバー台数・CPU・メモリー・キャッシュ・分散構成をこの人数だけから確定しない。
+  - 性能保証は負荷シナリオ、データ分布、計測環境、合格基準の確定後に評価する。
+  decision_reason: ユーザーが会話で確認・承認した要件。
+  related_ids:
+  - OV-004
+  - DATA-010
+  - API-011
+  affected_ids:
+  - INF-004
+  - DATA-010
+  - API-011
+  implementation_boundary: 当該未確定部分は実装しない。影響しない確定範囲の設計・実装は可能。
+- id: INF-006
+  title: 対象バージョンと依存関係
+  status: 未決
+  requirements:
+  - P1はPython 3.13.15、Django 5.2.17 LTS、PostgreSQL 17.11、psycopg 3.3.6を採用。起動コンテナで実際の版を確認済み。
+  - Pythonイメージはsha256:2325bb286ec344af3e5898cc224b5844e2707ac6e26b1632516fd3edc84a5e26、PostgreSQLイメージはsha256:639ab7ceb90e13123085b741fb31ef493fba25463002f6da665352e7b534b652に固定する。
+  - P1のPython依存はapp/requirements.txtで直接・間接依存を完全版指定する。asgiref 3.12.1、sqlparse 0.6.0、psycopg-binary 3.3.6、typing-extensions 4.16.0を含む。
+  - 構築先はUbuntu 26.04.1 LTS、x86_64。既存Docker Engine 29.7.2とDocker Compose v5.5.0を利用する。Dockerデーモンへの接続は確認済み。
+  - PostgreSQLドライバー、Markdown描画、HTML無害化、画像検証の具体的なライブラリ・バージョンも実装前に選定する。通常の必要ライブラリはプロジェクトルールに従い導入可能。
+  - 開発の画面確認ブラウザーはユーザー指定のGoogle Chrome。実際の検証バージョンを結果に記録する。一般配布時の最低対応版は未決。開発の起動検証対象は上記マシン。本番・負荷検証の実行基盤は保留。
+  - 依存関係はロックファイル等で再現できるよう管理する。懸念があるライブラリは導入前に人間へ確認する。
+  decision_reason: AI判断として承認済み技術の互換版を選定。Django公式の5.2 LTSとPython 3.13対応、PostgreSQL 14以降対応を確認し、PyPIで取得可能な版を確認。後続機能の依存と一般配布時の最低ブラウザー版のみ未決を維持。
+  related_ids:
+  - OV-003
+  - UI-001
+  - INF-002
+  affected_ids:
+  - INF-002
+  - UI-001
+  - API-008
+  implementation_boundary: 当該未確定部分は実装しない。影響しない確定範囲の設計・実装は可能。
+- id: INF-007
+  title: 開発環境接続詳細と追加環境
+  status: 未決
+  requirements:
+  - 開発用ホストは現在の作業マシンに確定。ユーザーはこのマシン内のブラウザーで確認する。社内の別PCへ直接公開する必要はない。
+  - ユーザー承認によりhttp://127.0.0.1:8000を採用。ループバック限定のローカルHTTPとし、この開発環境ではTLSを使用しない。Google Chromeで確認する。
+  - 独立したテスト環境・ステージング環境を構築するかは未決。必要な環境種類は人間が決定する。
+  decision_reason: 構築先・同一マシン内の確認・ローカルHTTP・Google Chromeはユーザー指定。独立テスト環境とステージング環境については未決を維持する。
+  related_ids:
+  - INF-001
+  - INF-003
+  affected_ids:
+  - INF-001
+  - INF-002
+  - INF-003
+  implementation_boundary: 当該未確定部分は実装しない。影響しない確定範囲の設計・実装は可能。
+- id: INF-008
+  title: 保存・運用・バックアップ
+  status: 未決
+  requirements:
+  - 監査ログの無期限保持と画像削除の要件は確定。開発用動作ログはユーザー承認により各コンテナ10MB×3ファイルの容量ローテーションとする。日数による保持保証はしない。監査ログにはこのローテーションを適用しない。
+  - バックアップ頻度・保持期間・復旧目標は未決。今回のP1では自動バックアップを構築せず、永続ボリュームと再起動時の保持を検証する。
+  - バックアップから削除画像を除去する時期を含む削除との整合性は、バックアップ方式決定時に人間へ確認する。
+  - 無期限監査ログと画像の増加を考慮した容量見積もり・監視の閾値は運用設計時に決定する。
+  decision_reason: データ保持期間・復旧目標・運用構成を独断で決めないため。
+  related_ids:
+  - OV-012
+  - DATA-008
+  - DATA-009
+  - INF-004
+  affected_ids:
+  - INF-003
+  - INF-004
+  implementation_boundary: 当該未確定部分は実装しない。影響しない確定範囲の設計・実装は可能。
+- id: INF-009
+  title: P1開発環境の起動・検証
+  status: 確定
+  requirements:
+  - compose.development.yamlで専用プロジェクト名taskmanagementsystem01-devを使用し、他プロジェクトのサービスを変更しない。
+  - execute/prepare-development.pyが秘密値を初回だけ生成し、Git対象外の.env.developmentへ所有者だけ読み書きできる形で保存する。再実行では上書きしない。
+  - execute/start-development.shでビルド・マイグレーション・起動・ヘルスチェックを行い、execute/stop-development.shでデータを残して停止する。
+  - Django開発サーバーをローカル開発にのみ使用する。ホストのループバックに限定し、DEBUGは無効とする。静的CSSのみ開発用配信し、画像の無認可配信は設けない。
+  - P1のテストは承認済み開発コンテナ内の一時テストDBで実施する。独立したテスト環境を構築するものではない。
+  decision_reason: AI補完。承認された環境の通常構築と、再実行・再開可能な検証手順を具体化するため。
+  related_ids: [INF-001, INF-002, INF-003, DATA-011, API-013, UI-011]
