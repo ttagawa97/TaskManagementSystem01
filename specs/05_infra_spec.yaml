@@ -145,3 +145,13 @@ items:
   - P1のテストは承認済み開発コンテナ内の一時テストDBで実施する。独立したテスト環境を構築するものではない。
   decision_reason: AI補完。承認された環境の通常構築と、再実行・再開可能な検証手順を具体化するため。
   related_ids: [INF-001, INF-002, INF-003, DATA-011, API-013, UI-011]
+
+- id: INF-010
+  title: P2開発環境の初期管理者作成
+  status: 確定
+  requirements:
+  - execute/create-initial-admin-development.shから開発appコンテナのcreate_initial_admin管理コマンドを対話実行する。ID・表示名・非表示の初期パスワードと確認入力を受け付ける。
+  - 通常の起動で管理者を自動作成せず、ユーザーが手元の端末で初回のみ入力する。初期パスワードはコマンド引数や環境設定ファイルに保存しない。
+  - 追加マイグレーションは通常の開発用起動シェルで適用する。既存DB・画像ボリュームを維持する。
+  decision_reason: OV-021の承認済み作成方式を既存の開発用シェル・コンテナ構成へ具体化したAI補完。
+  related_ids: [OV-021, OV-022, INF-009, DATA-011, API-014]

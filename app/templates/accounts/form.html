@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{{ heading }}</h1><section class="card form-card">
+{% if notice %}<p>{{ notice }}</p>{% endif %}
+<form method="post">{% csrf_token %}
+{{ form.non_field_errors }}
+{% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="required">必須</span>{% endif %}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+<button type="submit">{{ button }}</button>
+</form>
+{% if target %}<p><a href="/users/{{ target.pk }}/reset-password">このユーザーのパスワードを初期化</a></p>{% endif %}
+</section>
+{% endblock %}

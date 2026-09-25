@@ -4,7 +4,11 @@ from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
 
-class PageTests(SimpleTestCase):
+class PageTests(TestCase):
+    def setUp(self):
+        from accounts.models import User
+        self.user = User.objects.create(username="page-user", display_name="画面確認", must_change_password=False)
+        self.client.force_login(self.user)
     def test_localized_home_and_timezone(self):
         response = self.client.get('/')
         self.assertContains(response, 'lang="ja"')

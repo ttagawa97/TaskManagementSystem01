@@ -1,0 +1,2 @@
+{% extends 'base.html' %}
+{% block content %}<h1>{{ heading }}の確認</h1><section class="card"><p>「{{ project.name }}」を{{ heading }}します。</p><p>アーカイブ中は閲覧専用になり、管理操作も変更できません。</p><form method="post">{% csrf_token %}<button type="submit">{{ heading }}する</button> <a href="/projects/{{ project.pk }}">キャンセル</a></form></section>{% endblock %}

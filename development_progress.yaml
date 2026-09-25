@@ -1,19 +1,21 @@
 document_role: 作業再開用の参考情報。正式仕様はspecs配下の5つのYAMLを正とする。
 plan_document: development_plan.md
-current_phase: P1
-current_activity: P1共通画面・開発環境を実装し自動検証済み。Google Chromeでの画面レビュー待ち。
+current_phase: P3
+current_activity: P3のプロジェクト・参加者・マスター管理を実装。全36テスト、既存データ保持、移行・HTTP・開発起動確認が正常終了。ユーザー画面レビュー待ち。
 completed_phases:
 - 初回正式仕様YAML生成
 - 段階開発計画の作成と参照検証
 - P0：ユーザーが計画に沿った進行を指示し、対象範囲と順序を確認済み。
+- P1：実装・自動検証・開発環境起動確認済み。ユーザーが画面確認を完了し、P2への移行を明示指示。
+- P2：21テスト・開発起動確認済み。ユーザーが確認完了を報告し、P3への移行を明示指示。
 gate:
-  status: P1画面レビュー待ち
+  status: P3画面レビュー待ち
   environment_construction_authorized: true
   authorized_environment_type: 開発環境
   authorized_host: 現在このリポジトリを置いている作業マシン。ユーザーの「ここに作成します」で指定済み。
   authorization_basis: ユーザーの「では、そのように進めてください」により提示済みのP1開発環境構築を含む計画の進行を承認。
   implementation_started: true
-  next_gate: ユーザーがChromeでホームを確認後、修正を反映してP1を完了し、P2へ進む。
+  next_gate: P3画面レビューの結果を反映し、人間の移行指示後にP4へ進む。
   transition_policy: 各フェーズの検証結果を提示し、人間の動作レビューを反映してから次フェーズへ移る。
 phases:
 - id: P0
@@ -21,13 +23,13 @@ phases:
   status: 完了
 - id: P1
   name: 開発環境・共通基盤
-  status: 実装・自動検証済み／画面レビュー待ち
+  status: 完了
 - id: P2
   name: 認証・ユーザー管理・監査基盤
-  status: 未着手
+  status: 完了
 - id: P3
   name: プロジェクト・参加者・マスター
-  status: 未着手
+  status: 実装・自動検証済み／画面レビュー待ち
 - id: P4
   name: チケット・検索・親子関係・担当者制御
   status: 未着手
@@ -41,16 +43,13 @@ phases:
   name: 統合検証・仕上げ
   status: 未着手
 next_actions:
-- Google Chromeでhttp://127.0.0.1:8000の共通画面を確認してもらう。
-- 修正指示があればUI仕様とコードを更新し該当検証を行う。
-- P1承認後にP2の初期管理者作成・仮パスワード配布と期限・セッション期限・最後の管理者の扱いを順次確認する。
+- Chromeでプロジェクト一覧から作成・参加者追加・管理者指定と解除・ステータスと種別の追加編集と有効切替を確認してもらう。
+- アーカイブで管理操作も禁止され、解除後に変更可能になることを確認してもらう。
+- 修正を反映し、P3レビュー完了と移行指示を受けてP4へ進む。参加者削除・担当一括解除はP4で実装する。
 pending_question:
-  subject: P1画面レビュー
-  question: Google Chromeでホームの配置・配色・日本時間表示に問題がないか。
-  affected_spec_ids:
-  - UI-001
-  - UI-011
-  - INF-009
+  subject: P3画面レビュー
+  question: プロジェクト作成・参加者追加・管理者変更・マスター管理・アーカイブと解除に問題がないか。
+  affected_spec_ids: [UI-013, API-015, OV-005, OV-011]
 save_policy:
 - フェーズ開始・中断可能な区切り・完了時に本ファイルを保存する。
 - 計画変更時はdevelopment_plan.mdも更新する。
@@ -78,10 +77,10 @@ dependency_research:
     psycopg: 3.3.6
 unresolved_source: specs内のstatusが未決または保留の項目
 unresolved_schedule:
-  OV-018: P1・P2で開発に必要な認証運用を確認。本番分は保留可能。
+  OV-018: 開発の認証運用はOV-021・OV-022・OV-023で確定。本番固有運用のみ保留。
   OV-019: P6で削除済みログの参加者向け導線を確認。
-  OV-020: P2で最後の管理者、P3でマスター権限、P5で画像単独削除権限を確認。
-  INF-006: 基本依存固定済み。Chromeの実表示検証はレビュー待ち。後続ライブラリと一般配布最低ブラウザー版は後続。
+  OV-020: 最後の有効な管理者保護と非兼任システム管理者のマスター変更は確定。P5で画像単独削除権限を確認。
+  INF-006: 基本依存固定済み。Chromeの画面確認はユーザー完了報告を受領。実バージョンは未取得。後続ライブラリと一般配布最低ブラウザー版は後続。
   INF-007: 開発接続はローカルHTTPに確定。独立テスト環境・ステージングのみ未決。
   INF-008: 開発動作ログの容量ローテーションは確定。バックアップ・本番運用は未決。
 deferred_spec_ids:
@@ -92,6 +91,24 @@ deferred_spec_ids:
 - INF-004
 - INF-005
 verification_results:
+- check: P3自動テスト
+  result: 全36件正常終了（P2までの21件とP3追加15件）。初期管理者とマスター初期化・再実行、対象外プロジェクト拒否、非参加システム管理者の操作、一般参加者と管理者の権限、最低管理者数、必須ステータス保護、マスター有効切替、別プロジェクトID混入拒否、アーカイブ中の全管理変更拒否、監査失敗時ロールバック、同時管理者解除、CSRF、表示エスケープ、ページ分割を検証。
+- check: P3開発DB移行・既存データ保持
+  result: users 2件、audit_events 2件、django_session 1件の件数と全内容の照合用ハッシュが移行前後で一致。P3追加4テーブルは0件でテストデータ混入なし。再マイグレーションは変更なし、モデル差分なし。
+- check: P3開発起動とHTTP
+  result: 開発app/dbがhealthy。未認証の/projectsはログインへ誘導されHTTP 200、DBヘルスチェックとCSSも200。認証済みの各画面・更新処理は開発用一時DBの自動テストで検証。
+- check: P3画面レビュー
+  result: 未実施。ユーザーのChromeで新規画面と操作を確認してもらう。P3完了判定はレビュー後。
+- check: P2自動テスト
+  result: 21件正常終了（既存5件とP2追加16件）。ログイン・ログアウト、CSRF、権限、仮パスワード72時間、絶対セッション24時間、初期化後の既存セッション拒否、初回変更、パスワード検証、監査秘密非記録、監査失敗時ロールバック、同時管理者解除、初期管理者コマンドを検証。
+- check: P2移行と開発起動
+  result: 移行前はcontenttypesとmigration管理テーブルのみ。既存contenttype 1件の同一ID保持、unknownが無効・非管理者で1件のみ、通常ユーザー・監査データ0件を確認。追加マイグレーション適用済み、再実行で変更なし、モデル差分なし。app/dbがhealthy。ログイン画面・CSS・DBヘルスチェックがHTTP 200、ホームはログインへ誘導。
+- check: P2仕様整合性
+  result: YAML構文・仕様ID一意性・状態・仕様ID参照とgit diff --checkが正常。正式仕様5ファイルとREADMEへ反映。
+- check: P2ユーザー画面レビュー・初期管理者
+  result: ユーザーが確認完了と次フェーズへの進行を明示。修正指示なし。P2レビュー完了。
+- check: 作業再開時の稼働確認（2026-09-25）
+  result: ホームのHTTP 200と開発app/dbコンテナのhealthyを再確認。コード変更なし。既存の自動テスト結果を引き継ぎ、P1のChrome画面レビュー待ちを維持。
 - check: P1自動テスト
   result: 5件正常終了。ホーム・日本時間、404、変更メソッド拒否、DB正常時・障害時応答を検証。
 - check: 実際のHTTP応答
@@ -101,7 +118,7 @@ verification_results:
 - check: 依存関係
   result: 固定版インストールとpip check正常。Python・PostgreSQLは実イメージをダイジェスト固定。
 - check: Google Chrome画面確認
-  result: 未実施。この実行環境にはChrome実行コマンドなし。ユーザーのChromeで表示・デザイン・実バージョン確認が必要。P1未完了。
+  result: ユーザーが画面確認完了とP2への移行を明示。修正指示なし。Chromeの実バージョンは未取得。
 - check: 本番・負荷検証
   result: 保留。構築・実施なし。
 runtime:
@@ -112,6 +129,7 @@ runtime:
   stop: bash execute/stop-development.sh
   tests: bash execute/test-development.sh
   restart_verification: python3 execute/verify-development.py
+  initial_admin: bash execute/create-initial-admin-development.sh（初回専用。P2確認完了報告を受領済み。再作成不要）
   secrets: .env.development（Git対象外・内容非表示・再生成不要）
 handoff:
   portable_files:
@@ -133,7 +151,8 @@ handoff:
   - python3 execute/prepare-development.pyを実行する。
   - bash execute/start-development.shを実行する。
   - 必要に応じてbash execute/test-development.shを実行する。
-  data_migration: 現在はP1共通画面のみで業務データなし。Dockerボリュームの移行が必要になった場合は、バックアップ方式を決めてから実施する。
+  data_migration: P3のプロジェクト・参加者・マスター4テーブルを追加済み。既存ユーザー2件・監査2件・セッション1件の保持を確認済み。ユーザーが作成した実データを含むため再初期化しない。別PCへのデータ移行はバックアップ方式を決めてから実施する。
 resolved_issues:
 - 初回Dockerビルドで/mediaが既存だったためmkdir -pに修正し再ビルド成功。
 - DB障害モックのSimpleTestCase後処理エラーをDB対応TestCaseに移し、5件すべて正常終了。
+- P2の共通パスワード検証テストで候補文字列がDjango既知リストに含まれていなかったため、実リストの例に修正し全21件正常終了。

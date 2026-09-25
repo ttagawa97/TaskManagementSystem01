@@ -8,19 +8,25 @@ items:
   requirements:
   - 'users: id(bigint主キー), username(一意・必須), display_name, password_hash, is_active, is_system_admin, is_special, must_change_password,
     created_at, updated_at。'
+  - Django AbstractBaseUserを使用し、passwordフィールドをpassword_hash列に対応させる。last_loginと仮パスワード期限temporary_password_expires_at（日時・通常パスワード時NULL）を追加する。
+  - usernameは150文字以内のDjango標準ユーザー名文字種（英数字・Unicode文字・@/./+/-/_）、表示名は150文字以内・必須。IDの一意性は大文字小文字を区別する。標準入力検証としてAI補完。
   - unknownは1件のみのシステム共通予約ユーザーとして初期化する。通常ユーザーとして作成・改名・ログイン・担当手動選択しない。
   - ユーザーは物理削除しない。作成者・投稿者・監査操作者の参照を保持する。ユーザーIDは空白のみ不可。
+  - temporary_password_expires_atはOV-022の発行から72時間の期限を保存する。通常パスワードへの変更時はNULLにする。セッションはDjango標準テーブルに保存し、OV-023の絶対期限を維持する。
   - 通常の担当者候補は有効な参加者のみ。既存の無効化ユーザー参照とunknown参照は完了済みチケットで保持可能。
   decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
   related_ids:
   - OV-007
   - OV-009
   - OV-010
+  - OV-022
+  - OV-023
 - id: DATA-002
   title: プロジェクト
   status: 確定
   requirements:
   - 'projects: id(bigint主キー), name(必須), description, is_archived, created_by_id, created_at, updated_at, archived_at。'
+  - プロジェクト名は空白のみ不可・200文字以内、説明は空を許可し10000文字以内とする（標準入力検証のAI補完）。
   - プロジェクトは物理削除しない。開始時に必須ステータス4件と初期種別4件を作成し、管理者を最低1名登録する。
   decision_reason: AI補完。一般的なCRUD・入力検証・技術的整合性を具体化するため。
   related_ids:
@@ -47,6 +53,7 @@ items:
   - 必須ステータスは未対応(open)、処理中(in_progress)、処理済み(resolved)、完了(closed)。名称変更・削除・無効化は不可。完了判定はclosedのみ。
   - 追加ステータスは名称変更・無効化・再有効化が可能。削除機能は設けない。追加ステータスはすべて未完了。
   - 'ticket_types: id, project_id, name, is_active, sort_order, created_at, updated_at。初期値はタスク・バグ・要望・その他。初期種別も名称変更・無効化・再有効化が可能。'
+  - マスター名称は空白のみ不可・100文字以内、前後空白を除去する。表示順は初期値順、追加は末尾（sort_order・ID順）。
   - 種別も削除ではなく無効化を使用する。各マスターの名称は同一プロジェクトの同種マスター内で一意。
   - 無効化された値を既存チケットは保持できる。他の項目だけを編集する場合も保持可能だが、新規設定・別の値からの変更では選択不可。
   decision_reason: ユーザー承認したマスター仕様。AI補完として内部コードによる完了判定、名称の一意性、既存参照の維持を規定。
@@ -154,6 +161,11 @@ items:
   status: 確定
   requirements:
   - P1は専用の新規開発DBを構築し、Django contenttypesの初期マイグレーションのみ適用する。業務データ・ユーザーテーブルはP2以降に段階導入し、カスタムユーザー導入前に標準authのマイグレーションを実行しない。
+  - P3ではprojects・memberships・ticket_statuses・ticket_typesを追加する。P2のユーザー・監査・セッションを変更または削除しない。作成者・参加者参照はPROTECTで保護する。
+  - プロジェクト作成と管理者登録・初期マスター生成・監査記録は同一トランザクション。参加者の組、同種マスター名、必須ステータスコードのプロジェクト内一意性はDB制約でも保証する。
+  - 移行前後のユーザー・監査・セッションの件数と内容の一致、追加テーブルの初期件数、再適用時の変更なしを検証する。P2へコードを戻しても追加テーブルは保持される。データを消す逆移行は通常手順に含めない。
+  - P2では既存contenttypesを保持し、専用users・audit_eventsとDjango auth/sessionテーブルを追加する前進マイグレーションを適用する。既存テーブルの削除・再初期化は行わない。
+  - unknownはログイン不能・非管理者で1件作成する。移行前後の既存テーブル件数とunknownの状態を確認し、再適用時に重複しないことを検証する。P1へのコード後退には未使用の追加テーブルが残るが、P2業務データは削除しない。
   - 他プロジェクトのDBは変更しない。P1の新規初期化に既存業務データの移行はない。後続フェーズでは開発DB内の既存データへの影響を毎回確認する。
   - 初回実装ではDjangoマイグレーションを用い、unknownを一意に作成する。各プロジェクト作成時に必須ステータス・初期種別を初期化する。
   - 再実行でunknownや初期マスターが重複しないようにする。既存データがある場合は件数・参照関係・制約違反を確認し、移行方法と後方互換性をこの仕様へ追記してから移行する。

@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block content %}<h1>パスワード初期化の確認</h1><section class="card">
+<p>{{ target.display_name }}（{{ target.username }}）のパスワードを初期化します。</p>
+<p>現在のパスワードとログイン状態は無効になり、新しい仮パスワードでのログイン・変更が必要です。</p>
+<form method="post">{% csrf_token %}<button class="danger" type="submit">初期化する</button> <a href="/users/{{ target.pk }}">キャンセル</a></form>
+</section>{% endblock %}

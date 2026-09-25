@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}<h1>仮パスワードを発行しました</h1><section class="card">
+<p>対象：{{ target.display_name }}（{{ target.username }}）</p>
+<p>仮パスワード：<code class="temporary-password">{{ temporary_password }}</code></p>
+<p>有効期限：{{ target.temporary_password_expires_at|date:'Y年n月j日 H:i:s' }}（日本時間・発行から72時間）</p>
+<p>このパスワードは発行直後のみ表示されます。Teamsで本人へ手動で伝えてください。本人はログイン後にパスワードを変更してください。</p>
+<p><a href="/users">ユーザー管理へ</a> / <a href="/auth/login">ログインへ</a></p>
+</section>{% endblock %}
