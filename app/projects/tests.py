@@ -25,6 +25,40 @@ class ProjectTests(TestCase):
         self.base = f'/projects/{self.project.pk}'
         self.client.force_login(self.system)
 
+    def test_navigation_separates_settings_and_ticket_work(self):
+        response = self.client.get('/projects')
+        self.assertContains(response, f'<a href="{self.base}/tickets">Project A</a>', html=True)
+        self.assertContains(response, f'<a href="{self.base}/settings">プロジェクト設定</a>', html=True)
+        self.assertContains(response, 'href="/settings"')
+        self.assertNotContains(response, 'href="/users"')
+        self.assertContains(self.client.get('/settings'), 'href="/users"')
+        self.assertContains(self.client.get('/users'), 'href="/settings"')
+        self.assertContains(self.client.get(self.base+'/tickets'), f'href="{self.base}/settings"')
+        settings = self.client.get(self.base+'/settings')
+        for suffix in ['/tickets', '/members', '/statuses', '/types', '/edit', '/archive']:
+            self.assertContains(settings, f'href="{self.base}{suffix}"')
+        for suffix in ['/members', '/statuses', '/types', '/edit']:
+            self.assertContains(self.client.get(self.base+suffix), f'href="{self.base}/settings"')
+        self.assertRedirects(self.client.post(self.base+'/edit', {'name':'Project A','description':''}), self.base+'/settings')
+        self.assertRedirects(self.client.post(self.base+'/archive'), self.base+'/settings')
+        self.assertContains(self.client.get(self.base+'/settings'), f'href="{self.base}/unarchive"')
+
+    def test_settings_navigation_preserves_access(self):
+        self.client.force_login(self.member)
+        self.assertNotContains(self.client.get('/projects'), 'href="/settings"')
+        self.assertEqual(self.client.get('/settings').status_code, 403)
+        settings = self.client.get(self.base+'/settings')
+        self.assertEqual(settings.status_code, 200)
+        self.assertNotContains(settings, f'href="{self.base}/edit"')
+        self.assertNotContains(settings, f'href="{self.base}/archive"')
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(self.base+'/settings').status_code, 404)
+        self.client.logout()
+        self.assertRedirects(self.client.get('/settings'), '/auth/login')
+        self.client.force_login(self.system)
+        self.assertEqual(self.client.post('/settings').status_code, 405)
+        self.assertEqual(self.client.post(self.base+'/settings').status_code, 405)
+
     def test_create_initialization_and_idempotence(self):
         self.assertEqual(self.project.memberships.filter(is_project_admin=True).count(), 1)
         self.assertEqual(TicketStatus.objects.filter(project=self.project).count(), 4)

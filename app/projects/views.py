@@ -33,7 +33,7 @@ def create(request):
     if request.method == 'POST' and form.is_valid():
         try:
             project = services.create_project(request.user, form.cleaned_data['name'], form.cleaned_data['description'], [u.pk for u in form.cleaned_data['admins']])
-            return redirect(f'/projects/{project.pk}')
+            return redirect(f'/projects/{project.pk}/settings')
         except ValidationError as exc:
             status = apply_error(form, exc)
     return form_page(request, form, 'プロジェクト作成', status)
@@ -57,7 +57,7 @@ def edit(request, pk):
     if request.method == 'POST' and form.is_valid():
         try:
             services.edit_project(request.user, pk, form.cleaned_data['name'], form.cleaned_data['description'])
-            return redirect(f'/projects/{pk}')
+            return redirect(f'/projects/{pk}/settings')
         except ValidationError as exc:
             status = apply_error(form, exc)
     return form_page(request, form, 'プロジェクト編集', status, project=project)
@@ -111,7 +111,7 @@ def archive(request, pk, operation):
     archived = operation == 'archive'
     if request.method == 'POST':
         services.archive_project(request.user, pk, archived)
-        return redirect(f'/projects/{pk}')
+        return redirect(f'/projects/{pk}/settings')
     return render(request, 'projects/confirm.html', {'project':project, 'heading':'アーカイブ' if archived else 'アーカイブ解除'})
 
 

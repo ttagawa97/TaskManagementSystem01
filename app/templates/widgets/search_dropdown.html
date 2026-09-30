@@ -1,0 +1,5 @@
+<details class="search-dropdown">
+<summary id="{{ widget.attrs.id }}" aria-label="{{ widget.attrs.label }}"><span data-selection-label>指定なし</span></summary>
+<div class="search-options" role="group" aria-labelledby="{{ widget.attrs.id }}">
+{% for group, options, index in widget.optgroups %}{% for option in options %}<label><input type="checkbox" name="{{ option.name }}" value="{{ option.value }}"{% if option.selected %} checked{% endif %}><span>{{ option.label }}</span></label>{% endfor %}{% endfor %}
+</div></details>

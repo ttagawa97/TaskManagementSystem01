@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>チケット削除の確認</h1><section class="card"><p>#{{ ticket.pk }}「{{ ticket.title }}」を完全に削除します。復元できません。</p><form method="post">{% csrf_token %}<button class="danger">削除する</button> <a href="/tickets/{{ ticket.pk }}">キャンセル</a></form></section>{% endblock %}

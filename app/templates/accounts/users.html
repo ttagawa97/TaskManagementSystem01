@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+<p><a href="/settings">設定</a> / ユーザー管理</p>
 <div class="page-heading"><h1>ユーザー管理</h1><a class="button" href="/users/new">ユーザー作成</a></div>
 <section class="card"><table><thead><tr><th>ユーザーID</th><th>表示名</th><th>権限</th><th>状態</th><th>操作</th></tr></thead><tbody>
 {% for target in page %}<tr><td>{{ target.username }}</td><td>{{ target.display_name }}</td><td>{% if target.is_system_admin %}システム管理者{% else %}一般ユーザー{% endif %}</td><td>{% if target.is_active %}有効{% else %}無効{% endif %}{% if target.must_change_password %}・パスワード変更待ち{% endif %}</td><td><a href="/users/{{ target.pk }}">編集</a></td></tr>{% endfor %}

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block content %}<p><a href="/projects/{{ project.pk }}">{{ project.name }}</a></p><div class="page-heading"><h1>{{ heading }}管理</h1>{% if can_edit %}<a class="button" href="/projects/{{ project.pk }}/{{ kind }}/new">追加する</a>{% endif %}</div>
+{% block content %}<p><a href="/projects/{{ project.pk }}/settings">{{ project.name }} / プロジェクト設定</a></p><div class="page-heading"><h1>{{ heading }}管理</h1>{% if can_edit %}<a class="button" href="/projects/{{ project.pk }}/{{ kind }}/new">追加する</a>{% endif %}</div>
 {% if project.is_archived %}<p>アーカイブ中はマスターを変更できません。</p>{% endif %}
 <section class="card"><table><thead><tr><th>名称</th><th>状態</th><th>操作</th></tr></thead><tbody>
 {% for master in page %}<tr><td>{{ master.name }}{% if master.builtin_code %}（必須・固定）{% endif %}</td><td>{% if master.is_active %}有効{% else %}無効{% endif %}</td><td>{% if can_edit and not master.builtin_code %}<a href="/projects/{{ project.pk }}/{{ kind }}/{{ master.pk }}">編集・無効化／再有効化</a>{% endif %}</td></tr>{% endfor %}

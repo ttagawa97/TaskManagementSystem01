@@ -4,12 +4,23 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
+from django.core.paginator import Paginator
+from projects.services import visible_projects
 
 
 @access()
 @require_GET
 def home(request):
-    return render(request, 'home.html', {'now': timezone.localtime()})
+    from tickets.services import visible_tickets, recent_related_updates
+    projects = Paginator(visible_projects(request.user).order_by('name', 'id'), 50).get_page(request.GET.get('projects_page'))
+    assigned = visible_tickets(request.user).filter(assignee=request.user).order_by('-updated_at', '-id')
+    return render(request, 'dashboard.html', {
+        'projects_page':projects,
+        'assigned_tickets':assigned[:10],
+        'assigned_ticket_count':assigned.count(),
+        'update_events':recent_related_updates(request.user),
+        'dashboard_time':timezone.localtime(),
+    })
 
 
 @require_GET
@@ -33,3 +44,9 @@ def server_error(request):
 
 def forbidden(request, exception):
     return render(request, 'error.html', {'message': 'この操作を行う権限がありません。'}, status=403)
+
+
+@access(admin=True)
+@require_GET
+def settings_view(request):
+    return render(request, 'settings.html')

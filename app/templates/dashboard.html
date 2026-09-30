@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">{{ dashboard_time|date:'Y年n月j日 H:i' }}（日本時間）</p><h1>ダッシュボード</h1></div></div>
+<section class="card dashboard-section"><div class="page-heading"><h2>プロジェクト一覧</h2></div>
+<div class="table-scroll"><table><thead><tr><th>プロジェクト</th><th>状態</th><th>操作</th></tr></thead><tbody>
+{% for project in projects_page %}<tr><td><a href="/projects/{{ project.pk }}/tickets">{{ project.name }}</a></td><td>{% if project.is_archived %}アーカイブ済み{% else %}進行中{% endif %}</td><td><a href="/projects/{{ project.pk }}/settings">プロジェクト設定</a></td></tr>{% empty %}<tr><td colspan="3">参加中のプロジェクトはありません。</td></tr>{% endfor %}
+</tbody></table></div>
+{% if projects_page.has_other_pages %}<nav class="pagination" aria-label="プロジェクトページ操作">{% if projects_page.has_previous %}<a href="?projects_page={{ projects_page.previous_page_number }}">前へ</a>{% endif %} {{ projects_page.number }} / {{ projects_page.paginator.num_pages }} {% if projects_page.has_next %}<a href="?projects_page={{ projects_page.next_page_number }}">次へ</a>{% endif %}</nav>{% endif %}</section>
+<section class="card dashboard-section"><div class="page-heading"><h2>自分の割り当てチケット</h2><span>{{ assigned_ticket_count }}件</span></div>
+<div class="table-scroll"><table><thead><tr><th>ID</th><th>タイトル</th><th>プロジェクト</th><th>ステータス</th><th>期限</th><th>更新日時</th></tr></thead><tbody>
+{% for ticket in assigned_tickets %}<tr><td>{{ ticket.pk }}</td><td><a href="/tickets/{{ ticket.pk }}">{{ ticket.title }}</a></td><td><a href="/projects/{{ ticket.project_id }}/tickets">{{ ticket.project.name }}</a></td><td>{{ ticket.status.name }}</td><td>{{ ticket.due_date|date:'Y-m-d'|default:'—' }}</td><td>{{ ticket.updated_at|date:'Y-m-d H:i' }}</td></tr>{% empty %}<tr><td colspan="6">割り当てられたチケットはありません。</td></tr>{% endfor %}
+</tbody></table></div>
+{% if assigned_ticket_count %}<p><a href="/tickets?assignee_id={{ request.user.pk }}">担当者を自分に指定してチケット検索</a></p>{% endif %}</section>
+<section class="card dashboard-section"><div class="page-heading"><h2>自分が関係するチケットの更新ログ</h2></div>
+<div class="table-scroll"><table><thead><tr><th>日時</th><th>チケット</th><th>操作</th><th>更新者</th></tr></thead><tbody>
+{% for event in update_events %}<tr><td>{{ event.occurred_at|date:'Y-m-d H:i' }}</td><td><a href="/tickets/{{ event.ticket_context_id }}">#{{ event.ticket_context_id }} {{ event.entity_snapshot.title }}</a></td><td>{{ event.action_display }}</td><td>{{ event.actor_snapshot.display_name|default:'不明' }}</td></tr>{% empty %}<tr><td colspan="4">表示できる更新ログはありません。</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

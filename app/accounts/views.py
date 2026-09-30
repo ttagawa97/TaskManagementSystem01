@@ -83,7 +83,9 @@ def password_view(request):
             # Rotates session key while retaining the absolute login expiry.
             update_session_auth_hash(request, user)
             return redirect('/')
-    return render(request, 'accounts/form.html', {'form': form, 'heading': 'パスワード変更', 'button': '変更する',
+    profile_change = not request.user.must_change_password
+    return render(request, 'accounts/form.html', {'form': form, 'heading': 'プロフィール変更' if profile_change else 'パスワード変更',
+        'profile_change': profile_change, 'button': '変更する',
         'notice': '初回・初期化後は、業務を始める前にパスワードを変更してください。'}, status=400 if request.method == 'POST' else 200)
 
 

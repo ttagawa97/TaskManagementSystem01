@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
 {% block content %}<div class="page-heading"><h1>プロジェクト一覧</h1>{% if request.user.is_system_admin %}<a class="button" href="/projects/new">プロジェクト作成</a>{% endif %}</div>
-<section class="card"><table><thead><tr><th>プロジェクト</th><th>状態</th><th>更新日時（日本時間）</th></tr></thead><tbody>
-{% for project in page %}<tr><td><a href="/projects/{{ project.pk }}">{{ project.name }}</a></td><td>{% if project.is_archived %}アーカイブ済み{% else %}進行中{% endif %}</td><td>{{ project.updated_at|date:'Y/m/d H:i' }}</td></tr>{% empty %}<tr><td colspan="3">表示できるプロジェクトはありません。</td></tr>{% endfor %}
+<section class="card"><table><thead><tr><th>プロジェクト</th><th>状態</th><th>更新日時（日本時間）</th><th>設定</th></tr></thead><tbody>
+{% for project in page %}<tr><td><a href="/projects/{{ project.pk }}/tickets">{{ project.name }}</a></td><td>{% if project.is_archived %}アーカイブ済み{% else %}進行中{% endif %}</td><td>{{ project.updated_at|date:'Y/m/d H:i' }}</td><td><a href="/projects/{{ project.pk }}/settings">プロジェクト設定</a></td></tr>{% empty %}<tr><td colspan="4">表示できるプロジェクトはありません。</td></tr>{% endfor %}
 </tbody></table>{% include 'projects/pagination.html' %}</section>{% endblock %}

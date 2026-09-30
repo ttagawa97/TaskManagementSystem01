@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% load static %}
+{% block content %}
+<div class="page-heading ticket-editor-heading"><h1>{% if ticket %}{{ ticket.title }}{% else %}チケット作成{% endif %}</h1>{% if ticket %}<dl class="ticket-editor-meta"><div><dt>作成日</dt><dd><time datetime="{{ ticket.created_at|date:'c' }}">{{ ticket.created_at|date:'Y-m-d' }}</time></dd></div><div><dt>作成者</dt><dd>{{ ticket.creator.display_name }}</dd></div></dl>{% endif %}</div>
+{% if read_only %}<p class="notice">アーカイブ済みのため閲覧専用です。</p>{% endif %}
+<section class="card form-card ticket-editor-card">
+<form method="post" id="ticket-form">{% csrf_token %}{{ form.non_field_errors }}
+<div class="ticket-fields">
+{% for field in form %}
+{% if field.name == 'description_markdown' %}
+<div class="field description-field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="required">必須</span>{% endif %}</label>
+{{ field }}{{ field.errors }} <button type="button" class="preview-button" id="description-preview-button">プレビュー</button></div>
+{% else %}<div class="field field-{{ field.name }}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="required">必須</span>{% endif %}</label>{{ field }}{{ field.errors }}</div>{% endif %}
+{% endfor %}
+</div>
+{% if not read_only %}<button type="submit">保存する</button> <a class="button" href="/projects/{{ project.pk }}/tickets">キャンセル</a>{% if ticket and can_delete %} <a class="button danger" href="/tickets/{{ ticket.pk }}/delete">削除</a>{% endif %}{% endif %}
+</form></section>
+{% if ticket %}{% if not read_only %}<section class="card comment-compose"><h2>コメント</h2><form method="post" enctype="multipart/form-data" action="/tickets/{{ ticket.pk }}/comments" class="comment-form" id="comment-form">{% csrf_token %}{{ comment_form.non_field_errors }}{% for field in comment_form %}{% if field.name == 'body_markdown' %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }} <button type="button" class="preview-button" id="comment-preview-button">プレビュー</button></div>{% else %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}<small>形式不問、1ファイル10 MiB以下・1コメント10ファイルまで。</small></div>{% endif %}{% endfor %}<button type="submit">コメントを追加</button></form></section>{% endif %}
+<section class="card ticket-comments"><h2>コメント履歴</h2>{% for comment in comments %}<article class="ticket-comment"><p><strong>{{ comment.author_snapshot.display_name|default:comment.author.username }}</strong> · {{ comment.created_at|date:'Y-m-d H:i' }}（日本時間）</p><div class="markdown-body">{{ comment.rendered_body|safe }}</div>{% for attachment in comment.attachments.all %}<p><a href="/attachments/{{ attachment.pk }}/content">{{ attachment.original_filename }}</a>（{{ attachment.size_bytes|filesizeformat }}）</p>{% endfor %}</article>{% empty %}<p>コメントはありません。</p>{% endfor %}</section>{% endif %}
+<dialog class="markdown-preview-dialog" id="markdown-preview-dialog" aria-labelledby="markdown-preview-title"><div class="preview-dialog-heading"><h2 id="markdown-preview-title">プレビュー</h2><button type="button" id="preview-close-button">閉じる</button></div><div id="markdown-preview-content" class="markdown-body"></div><p id="preview-dialog-status" role="status" aria-live="polite"></p></dialog>
+<script src="{% static 'core/ticket-editor.js' %}?v=20260930-ticket-popup-preview-2" defer></script>
+{% endblock %}

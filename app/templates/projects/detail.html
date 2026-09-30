@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
-{% block content %}<p><a href="/projects">プロジェクト一覧</a></p><div class="page-heading"><h1>{{ project.name }}</h1><span class="badge">{% if project.is_archived %}アーカイブ済み{% else %}進行中{% endif %}</span></div>
+{% block content %}<p><a href="/projects">プロジェクト一覧</a></p><div class="page-heading"><h1>{{ project.name }} — プロジェクト設定</h1><span class="badge">{% if project.is_archived %}アーカイブ済み{% else %}進行中{% endif %}</span></div>
 <section class="card"><h2>基本情報</h2><div class="description">{{ project.description|linebreaksbr }}</div>
 {% if project.is_archived %}<p>閲覧専用です。管理操作を含む変更にはアーカイブ解除が必要です。</p>{% endif %}
-<nav class="project-links"><a href="/projects/{{ project.pk }}/members">参加者</a><a href="/projects/{{ project.pk }}/statuses">ステータス</a><a href="/projects/{{ project.pk }}/types">種別</a></nav>
+<nav class="project-links"><a href="/projects/{{ project.pk }}/tickets">チケット一覧へ</a><a href="/projects/{{ project.pk }}/members">参加者</a><a href="/projects/{{ project.pk }}/statuses">ステータス</a><a href="/projects/{{ project.pk }}/types">種別</a></nav>
 {% if request.user.is_system_admin and not project.is_archived %}<p><a href="/projects/{{ project.pk }}/edit">基本情報を編集</a></p>{% endif %}
 {% if can_manage %}<p>{% if project.is_archived %}<a href="/projects/{{ project.pk }}/unarchive">アーカイブを解除</a>{% else %}<a href="/projects/{{ project.pk }}/archive">アーカイブする</a>{% endif %}</p>{% endif %}
 </section>{% endblock %}

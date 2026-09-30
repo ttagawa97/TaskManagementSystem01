@@ -4,3 +4,6 @@ sqlparse==0.6.0
 psycopg[binary]==3.3.6
 psycopg-binary==3.3.6
 typing-extensions==4.16.0
+markdown-it-py==4.2.0
+mdurl==0.1.2
+nh3==0.3.7

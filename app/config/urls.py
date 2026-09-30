@@ -4,6 +4,8 @@ from core import views
 from accounts import views as accounts
 
 urlpatterns = [
+    path('settings', views.settings_view),
+    path('', include('tickets.urls')),
     path('', include('projects.urls')),
     path('auth/login', accounts.login_view),
     path('auth/logout', accounts.logout_view),

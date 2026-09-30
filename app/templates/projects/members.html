@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block content %}<p><a href="/projects/{{ project.pk }}">{{ project.name }}</a></p><h1>参加者</h1>
+{% block content %}<p><a href="/projects/{{ project.pk }}/settings">{{ project.name }} / プロジェクト設定</a></p><h1>参加者</h1>
 {% if project.is_archived %}<p>アーカイブ中は参加者追加・管理者変更ができません。</p>{% endif %}
 <section class="card"><table><thead><tr><th>ユーザーID</th><th>表示名</th><th>権限</th><th>状態</th><th>操作</th></tr></thead><tbody>
 {% for member in page %}<tr><td>{{ member.user.username }}</td><td>{{ member.user.display_name }}</td><td>{% if member.is_project_admin %}プロジェクト管理者{% else %}一般参加者{% endif %}</td><td>{% if member.user.is_active %}有効{% else %}無効{% endif %}</td><td>{% if request.user.is_system_admin and not project.is_archived %}<a href="/projects/{{ project.pk }}/members/{{ member.user_id }}/role">管理者権限を変更</a>{% endif %}</td></tr>{% endfor %}
